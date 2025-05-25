@@ -4,9 +4,17 @@ import socket
 import sys
 import threading
 
+running = True
 
-def generate_random_reply(received_data, client_addr):
+
+def generate_random_reply() -> str | bytes:
     return os.urandom(10)
+
+
+def to_bytes(text: str | bytes) -> bytes:
+    if not isinstance(text, bytes):
+        return text.encode('utf-8')
+    return text
 
 
 def handle_tcp_client(conn, addr):
@@ -19,11 +27,11 @@ def handle_tcp_client(conn, addr):
                 break  # Client disconnected
 
             received_message = data.decode('utf-8', errors='ignore')
-            print(f"[TCP] Received from {addr}: {received_message[:100]}...")  # Print first 100 chars
+            print(f"[TCP] Received from {addr}: {received_message[:100]}")  # Print first 100 chars
 
-            reply_message = generate_random_reply(received_message, addr)
+            reply_message = generate_random_reply()
             print(f"[TCP] Replying to {addr}: {reply_message}")
-            conn.sendall(reply_message.encode('utf-8'))
+            conn.sendall(to_bytes(reply_message))
 
     except ConnectionResetError:
         print(f"[TCP] Client {addr} unexpectedly disconnected.")
@@ -42,7 +50,7 @@ def start_tcp_server(host: str, port: int) -> None:
         s.listen()
         print(f"TCP Server listening on {host}:{port}")
 
-        while True:
+        while running:
             conn, addr = s.accept()
             client_handler = threading.Thread(target=handle_tcp_client, args=(conn, addr))
             client_handler.start()
@@ -54,15 +62,15 @@ def start_udp_server(host: str, port: int) -> None:
         s.bind((host, port))
         print(f"UDP Server listening on {host}:{port}")
 
-        while True:
+        while running:
             try:
                 data, addr = s.recvfrom(4096)  # Receive data and sender address
                 received_message = data.decode('utf-8', errors='ignore')
-                print(f"[UDP] Received from {addr}: {received_message[:100]}...")  # Print first 100 chars
+                print(f"[UDP] Received from {addr}: {received_message[:100]}")  # Print first 100 chars
 
-                reply_message = generate_random_reply(received_message, addr)
+                reply_message = generate_random_reply()
                 print(f"[UDP] Replying to {addr}: {reply_message}")
-                s.sendto(reply_message.encode('utf-8'), addr)  # Send reply back to sender
+                s.sendto(to_bytes(reply_message), addr)  # Send reply back to sender
             except Exception as e:
                 print(f"[UDP] Error processing UDP packet: {e}")
 
@@ -78,10 +86,14 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.protocol == 'tcp':
-        start_tcp_server(host=args.host, port=args.port)
-    elif args.protocol == 'udp':
-        start_udp_server(host=args.host, port=args.port)
-    else:
-        print("Invalid protocol specified. Use 'tcp' or 'udp'.")
-        sys.exit(1)
+    try:
+        if args.protocol == 'tcp':
+            start_tcp_server(host=args.host, port=args.port)
+        elif args.protocol == 'udp':
+            start_udp_server(host=args.host, port=args.port)
+        else:
+            print("Invalid protocol specified. Use 'tcp' or 'udp'.")
+            sys.exit(1)
+    except KeyboardInterrupt:
+        running = False
+        sys.exit(0)
