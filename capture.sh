@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ -z "$1" ]; then
-	echo Missing output filename (without .pcap)
+	echo "Missing output filename (without .pcap)"
 	exit 1
 fi
 
