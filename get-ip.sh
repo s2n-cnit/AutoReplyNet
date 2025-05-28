@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ -z "$1" ]; then
-	echo "Missing input filename (without .pcap)"
+	echo "Missing input filename"
 	exit 1
 fi
 
@@ -10,6 +10,6 @@ if [ -z "$2" ]; then
 	exit 2
 fi
 
-tshark -r $1.pcap -T fields -e ip.$2 > tmp
+tshark -r $1 -T fields -e ip.$2 > tmp
 sed '/^$/d' tmp | sort | uniq -c
-rm tmp
+#rm tmp
